@@ -1,4 +1,3 @@
-import streamlit as st
 import pygame
 import random
 
@@ -23,38 +22,57 @@ direction = (GRID_SIZE, 0)
 food = (random.randint(0, (WIDTH//GRID_SIZE) - 1) * GRID_SIZE, 
         random.randint(0, (HEIGHT//GRID_SIZE) - 1) * GRID_SIZE)
 
+# Move Snake
 def move_snake():
     global snake, food
     new_head = (snake[0][0] + direction[0], snake[0][1] + direction[1])
+
+    # Game Over if Snake hits wall or itself
+    if (new_head in snake or 
+        new_head[0] < 0 or new_head[1] < 0 or 
+        new_head[0] >= WIDTH or new_head[1] >= HEIGHT):
+        return False
+
     if new_head == food:
         food = (random.randint(0, (WIDTH//GRID_SIZE) - 1) * GRID_SIZE, 
                 random.randint(0, (HEIGHT//GRID_SIZE) - 1) * GRID_SIZE)
     else:
         snake.pop()
+
     snake.insert(0, new_head)
+    return True
 
-# Streamlit UI
-st.title("🐍 Snake Game")
-if st.button("Start Game"):
-    running = True
-    clock = pygame.time.Clock()
+# Game Loop
+running = True
+clock = pygame.time.Clock()
 
-    while running:
-        screen.fill(BLACK)
+while running:
+    screen.fill(BLACK)
 
-        # Event Handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+    # Event Handling
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP and direction != (0, GRID_SIZE):
+                direction = (0, -GRID_SIZE)
+            elif event.key == pygame.K_DOWN and direction != (0, -GRID_SIZE):
+                direction = (0, GRID_SIZE)
+            elif event.key == pygame.K_LEFT and direction != (GRID_SIZE, 0):
+                direction = (-GRID_SIZE, 0)
+            elif event.key == pygame.K_RIGHT and direction != (-GRID_SIZE, 0):
+                direction = (GRID_SIZE, 0)
 
-        move_snake()
+    # Move Snake
+    if not move_snake():
+        break  # Game Over
 
-        # Draw Snake & Food
-        for segment in snake:
-            pygame.draw.rect(screen, GREEN, (*segment, GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, RED, (*food, GRID_SIZE, GRID_SIZE))
+    # Draw Snake & Food
+    for segment in snake:
+        pygame.draw.rect(screen, GREEN, (*segment, GRID_SIZE, GRID_SIZE))
+    pygame.draw.rect(screen, RED, (*food, GRID_SIZE, GRID_SIZE))
 
-        pygame.display.flip()
-        clock.tick(10)
+    pygame.display.flip()
+    clock.tick(10)
 
-    pygame.quit()
+pygame.quit()
