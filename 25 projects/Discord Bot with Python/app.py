@@ -1,9 +1,8 @@
 import streamlit as st
 import requests
-
-
-TOKEN = "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"
-
+ 
+ # Get GitHub Token from Streamlit Secrets
+TOKEN = st.secrets["GITHUB_TOKEN"]
 
 def get_github_profile_image(username):
     url = f"https://api.github.com/users/{username}"
@@ -29,3 +28,4 @@ if st.button("Get Profile Image"):
             st.error("User not found or API rate limit exceeded!")
     else:
         st.warning("Please enter a username!")
+
