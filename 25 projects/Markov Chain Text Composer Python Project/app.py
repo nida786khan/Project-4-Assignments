@@ -1,25 +1,20 @@
 import streamlit as st
-import markovify
 
 # Streamlit UI
 st.title("🎵 Markov Chain Text Composer")
 
 # User Input
-st.sidebar.header("Upload Text File")
+st.sidebar.header("Upload a Text File")
 uploaded_file = st.sidebar.file_uploader("Upload a text file", type=["txt"])
 
 if uploaded_file:
+    # Read & Decode Text File
     text = uploaded_file.read().decode("utf-8")
-    
-    # Train Markov Model
-    text_model = markovify.Text(text, state_size=2)
 
-    # Generate Text
-    st.sidebar.header("Generate Text")
-    sentence_count = st.sidebar.slider("Number of Sentences", 1, 5, 3)
-
-    if st.sidebar.button("Generate"):
-        st.write("### 🎶 Generated Text:")
-        for _ in range(sentence_count):
-            st.write(text_model.make_sentence())
+    # Check if the file is empty
+    if not text.strip():
+        st.error("❌ Error: The uploaded file is empty. Please upload a valid text file.")
+    else:
+        st.write("### 📜 Extracted Text:")
+        st.text_area("Extracted Content:", text, height=300)
 
