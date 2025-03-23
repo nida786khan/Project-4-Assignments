@@ -26,31 +26,37 @@ if start:
 
 # Stop Timer
 if stop:
-    st.session_state.running = False
+    st.session_state.running = False  # Stop the countdown but keep the current time
 
 # Resume Timer
 if resume:
     st.session_state.running = True
 
-# Clear Timer
+# Clear Timer (Removes everything)
 if clear:
     st.session_state.running = False
-    st.session_state.remaining_time = 1  # Reset to 1 instead of 0
-    st.rerun()  # Corrected from experimental_rerun()
+    st.session_state.remaining_time = 1
+    st.rerun()  # Refresh the app
 
 # Timer logic
+progress_bar = st.progress(0)
+timer_display = st.empty()  # Store timer text separately
+
 if st.session_state.running and st.session_state.remaining_time > 0:
-    progress_bar = st.progress(0)
-    with st.empty():
-        for remaining in range(st.session_state.remaining_time, -1, -1):
-            if not st.session_state.running:
-                st.warning("⏹ Timer Stopped!")
-                st.session_state.remaining_time = remaining
-                break
-            mins, secs = divmod(remaining, 60)
-            st.subheader(f"⏳ {mins:02}:{secs:02}")
-            progress_bar.progress((seconds - remaining) / seconds)  
-            time.sleep(1)
-        else:
-            st.success("⏰ Time's up!")
-            st.session_state.running = False
+    for remaining in range(st.session_state.remaining_time, -1, -1):
+        if not st.session_state.running:
+            st.session_state.remaining_time = remaining  # Save the stopped time
+            break  # Stop the loop without removing display
+
+        mins, secs = divmod(remaining, 60)
+        timer_display.subheader(f"⏳ {mins:02}:{secs:02}")
+        progress_bar.progress((seconds - remaining) / seconds)
+        time.sleep(1)
+
+    else:
+        st.success("⏰ Time's up!")
+        st.session_state.running = False
+
+if not st.session_state.running and not clear:
+    mins, secs = divmod(st.session_state.remaining_time, 60)
+    timer_display.subheader(f"⏹ Timer Stopped at {mins:02}:{secs:02}")
