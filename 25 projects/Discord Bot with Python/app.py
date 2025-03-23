@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # GitHub Personal Access Token (Securely Store It, Don't Share Publicly)
-TOKEN = st.secrets["github"]["token"]
+TOKEN = "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"
 
 
 def get_github_profile_image(username):
