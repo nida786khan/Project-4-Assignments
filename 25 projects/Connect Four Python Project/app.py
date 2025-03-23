@@ -9,7 +9,7 @@ COLUMN_COUNT = 7
 def create_board():
     return np.zeros((ROW_COUNT, COLUMN_COUNT), dtype=int)
 
-board = create_board()
+board = st.session_state.get("board", create_board())
 
 # Function to drop piece
 def drop_piece(board, col, piece):
@@ -21,7 +21,7 @@ def drop_piece(board, col, piece):
 
 # Function to draw board
 def draw_board(board):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(4, 3))  # 📌 Small board size
     ax.set_xticks(np.arange(COLUMN_COUNT+1)-0.5, minor=True)
     ax.set_yticks(np.arange(ROW_COUNT+1)-0.5, minor=True)
     ax.grid(which="minor", color="black", linestyle='-', linewidth=2)
@@ -43,13 +43,17 @@ def draw_board(board):
 # Streamlit UI
 st.title("🔴🟡 Connect Four Game")
 
-player_turn = st.session_state.get("player_turn", 1)
-board = st.session_state.get("board", create_board())
+# Sidebar Controls
+with st.sidebar:
+    st.header("Game Controls")
+    player_turn = st.session_state.get("player_turn", 1)
+    col_choice = st.radio("Choose a column:", list(range(COLUMN_COUNT)))
+    
+    if st.button("Drop Piece"):
+        if drop_piece(board, col_choice, player_turn):
+            st.session_state.board = board
+            st.session_state.player_turn = 3 - player_turn  # Toggle between 1 and 2
+            st.rerun()  # ✅ FIXED
 
-col_choice = st.radio("Choose a column to drop your piece:", list(range(COLUMN_COUNT)))
-if st.button("Drop Piece"):
-    if drop_piece(board, col_choice, player_turn):
-        st.session_state.board = board
-        st.session_state.player_turn = 3 - player_turn  # Toggle between 1 and 2
-
+# Show Board
 st.pyplot(draw_board(board))
