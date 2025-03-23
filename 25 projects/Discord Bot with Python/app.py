@@ -28,4 +28,7 @@ if st.button("Get Profile Image"):
             st.error("User not found or API rate limit exceeded!")
     else:
         st.warning("Please enter a username!")
+     # Developed by Nida Khan
+st.markdown("---")  
+st.markdown("### Developed by **Nida Khan** 🚀")
 
