@@ -1,132 +1,73 @@
 import pygame
 import random
 
-# Initialize pygame
-pygame.init()
+# Game Constants
+WIDTH, HEIGHT = 300, 600
+BLOCK = 30
+ROWS, COLS = HEIGHT // BLOCK, WIDTH // BLOCK
 
-# Define constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 300, 600
-BLOCK_SIZE = 30
-GAME_WIDTH, GAME_HEIGHT = SCREEN_WIDTH // BLOCK_SIZE, SCREEN_HEIGHT // BLOCK_SIZE
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-CYAN = (0, 255, 255)
+# Colors
+BLACK, WHITE = (0, 0, 0), (255, 255, 255)
+COLORS = [(0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (0, 255, 0), (255, 0, 0), (128, 0, 128)]
 
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Tetris")
-
-# Define the shapes of the tetrominoes
+# Shapes
 SHAPES = [
-    [[1, 1, 1, 1]],  # I
-    [[1, 1], [1, 1]],  # O
-    [[0, 1, 0], [1, 1, 1]],  # T
-    [[1, 0, 0], [1, 1, 1]],  # L
-    [[0, 0, 1], [1, 1, 1]],  # J
-    [[1, 1, 0], [0, 1, 1]],  # S
-    [[0, 1, 1], [1, 1, 0]],  # Z
+    [[1, 1, 1, 1]],
+    [[1, 1], [1, 1]],
+    [[1, 0], [1, 0], [1, 1]],
+    [[0, 1], [0, 1], [1, 1]],
+    [[0, 1, 1], [1, 1, 0]],
+    [[1, 1, 0], [0, 1, 1]],
+    [[0, 1, 0], [1, 1, 1]]
 ]
 
-# Function to create a new piece
-def new_piece():
-    shape = random.choice(SHAPES)
-    color = random.choice([RED, GREEN, BLUE, CYAN])
-    return shape, color
+# Initialize Pygame
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Tetris")
+clock = pygame.time.Clock()
 
-# Function to draw the grid
+def new_tetromino():
+    return {"shape": random.choice(SHAPES), "color": random.choice(COLORS), "x": COLS // 2, "y": 0}
+
 def draw_grid():
-    for y in range(GAME_HEIGHT):
-        for x in range(GAME_WIDTH):
-            pygame.draw.rect(screen, WHITE, (x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 1)
+    for y in range(ROWS):
+        for x in range(COLS):
+            pygame.draw.rect(screen, WHITE, (x * BLOCK, y * BLOCK, BLOCK, BLOCK), 1)
 
-# Function to draw a piece on the screen
-def draw_piece(piece, x_offset, y_offset, color):
-    shape, _ = piece
-    for y, row in enumerate(shape):
+def draw_tetromino(tet):
+    for y, row in enumerate(tet["shape"]):
         for x, cell in enumerate(row):
             if cell:
-                pygame.draw.rect(screen, color, ((x + x_offset) * BLOCK_SIZE, (y + y_offset) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+                pygame.draw.rect(screen, tet["color"], ((tet["x"] + x) * BLOCK, (tet["y"] + y) * BLOCK, BLOCK, BLOCK))
 
-# Function to check if the piece is within bounds and not colliding
-def valid_position(piece, x_offset, y_offset, grid):
-    shape, _ = piece
-    for y, row in enumerate(shape):
-        for x, cell in enumerate(row):
-            if cell:
-                if x + x_offset < 0 or x + x_offset >= GAME_WIDTH or y + y_offset >= GAME_HEIGHT:
-                    return False
-                if grid[y + y_offset][x + x_offset]:
-                    return False
-    return True
+def move_tetromino(tet, dx, dy):
+    tet["x"] += dx
+    tet["y"] += dy
 
-# Function to lock the piece into the grid
-def lock_piece(piece, x_offset, y_offset, grid):
-    shape, color = piece
-    for y, row in enumerate(shape):
-        for x, cell in enumerate(row):
-            if cell:
-                grid[y + y_offset][x + x_offset] = color
-
-# Function to clear completed lines
-def clear_lines(grid):
-    lines_cleared = 0
-    for y in range(GAME_HEIGHT - 1, -1, -1):
-        if all(grid[y]):
-            lines_cleared += 1
-            del grid[y]
-            grid.insert(0, [None] * GAME_WIDTH)
-    return lines_cleared
-
-# Main game loop
 def game_loop():
-    grid = [[None] * GAME_WIDTH for _ in range(GAME_HEIGHT)]
-    clock = pygame.time.Clock()
-    game_over = False
-    piece = new_piece()
-    x_offset = GAME_WIDTH // 2 - len(piece[0]) // 2
-    y_offset = 0
-    speed = 500
-    lines_cleared = 0
-
-    while not game_over:
+    tetromino = new_tetromino()
+    running = True
+    
+    while running:
         screen.fill(BLACK)
         draw_grid()
-
+        draw_tetromino(tetromino)
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_over = True
-
-        # Move piece left, right, or down based on key presses
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and valid_position(piece, x_offset - 1, y_offset, grid):
-            x_offset -= 1
-        if keys[pygame.K_RIGHT] and valid_position(piece, x_offset + 1, y_offset, grid):
-            x_offset += 1
-        if keys[pygame.K_DOWN] and valid_position(piece, x_offset, y_offset + 1, grid):
-            y_offset += 1
-
-        # Move piece down automatically
-        if pygame.time.get_ticks() % speed == 0:
-            if valid_position(piece, x_offset, y_offset + 1, grid):
-                y_offset += 1
-            else:
-                lock_piece(piece, x_offset, y_offset, grid)
-                lines_cleared += clear_lines(grid)
-                piece = new_piece()
-                x_offset = GAME_WIDTH // 2 - len(piece[0]) // 2
-                y_offset = 0
-                if not valid_position(piece, x_offset, y_offset, grid):
-                    game_over = True
-
-        draw_piece(piece, x_offset, y_offset, piece[1])
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    move_tetromino(tetromino, -1, 0)
+                if event.key == pygame.K_RIGHT:
+                    move_tetromino(tetromino, 1, 0)
+                if event.key == pygame.K_DOWN:
+                    move_tetromino(tetromino, 0, 1)
+        
         pygame.display.flip()
-        clock.tick(60)
-
-# Start the game
-game_loop()
-pygame.quit()
-
-
+        clock.tick(10)
     
+    pygame.quit()
+
+game_loop()
