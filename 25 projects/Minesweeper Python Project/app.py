@@ -1,53 +1,85 @@
 import streamlit as st
-import random
 import numpy as np
+import random
 
-# Game settings
-GRID_SIZE = 5
-MINES_COUNT = 3
+def create_board(size, mines):
+    board = np.zeros((size, size), dtype=int)
+    mine_positions = random.sample(range(size * size), mines)
+    
+    for pos in mine_positions:
+        row, col = divmod(pos, size)
+        board[row][col] = -1
+    
+    for row in range(size):
+        for col in range(size):
+            if board[row][col] == -1:
+                continue
+            count = sum(
+                board[r][c] == -1
+                for r in range(max(0, row - 1), min(size, row + 2))
+                for c in range(max(0, col - 1), min(size, col + 2))
+            )
+            board[row][col] = count
+    return board
 
-# Initialize session state
-if "board" not in st.session_state:
-    st.session_state.board = np.zeros((GRID_SIZE, GRID_SIZE), dtype=int)
-    st.session_state.mines = set(random.sample(range(GRID_SIZE * GRID_SIZE), MINES_COUNT))
-    st.session_state.revealed = set()
-    st.session_state.game_over = False
+def display_board(board, revealed, flagged):
+    size = len(board)
+    for row in range(size):
+        cols = []
+        for col in range(size):
+            if flagged[row][col]:
+                cols.append("🚩")
+            elif not revealed[row][col]:
+                cols.append("⬜")
+            elif board[row][col] == -1:
+                cols.append("💣")
+            else:
+                cols.append(str(board[row][col]) if board[row][col] > 0 else " ")
+        st.write(" ".join(cols))
 
-# Function to count nearby mines
-def count_mines(r, c):
-    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-    return sum((r + dr) * GRID_SIZE + (c + dc) in st.session_state.mines 
-               for dr, dc in directions if 0 <= r + dr < GRID_SIZE and 0 <= c + dc < GRID_SIZE)
+def reveal(board, revealed, row, col):
+    if revealed[row][col]:
+        return
+    
+    revealed[row][col] = True
+    
+    if board[row][col] == 0:
+        for r in range(max(0, row - 1), min(len(board), row + 2)):
+            for c in range(max(0, col - 1), min(len(board), col + 2)):
+                if not revealed[r][c]:
+                    reveal(board, revealed, r, c)
 
-# Reveal cell function
-def reveal_cell(r, c):
-    if (r * GRID_SIZE + c) in st.session_state.mines:
-        st.session_state.game_over = True
-    elif (r, c) not in st.session_state.revealed:
-        st.session_state.revealed.add((r, c))
-        count = count_mines(r, c)
-        if count == 0:
-            for dr, dc in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE:
-                    reveal_cell(nr, nc)
-
-# Streamlit UI
-st.title("💣 Minesweeper")
-
-if st.session_state.game_over:
-    st.error("💥 BOOM! You hit a mine! Game Over.")
-elif len(st.session_state.revealed) == (GRID_SIZE * GRID_SIZE) - MINES_COUNT:
-    st.success("🎉 Congratulations! You won!")
-
-# Create grid buttons
-for r in range(GRID_SIZE):
-    cols = []
-    for c in range(GRID_SIZE):
-        if (r, c) in st.session_state.revealed:
-            count = count_mines(r, c)
-            cols.append(st.button(f"{count}" if count > 0 else "⬜", key=f"{r}{c}", disabled=True))
+def main():
+    st.title("💣 Minesweeper Game")
+    size = st.sidebar.slider("Grid Size", 5, 10, 9)
+    mines = st.sidebar.slider("Number of Mines", 1, size * size // 2, 10)
+    
+    if "board" not in st.session_state:
+        st.session_state.board = create_board(size, mines)
+        st.session_state.revealed = np.zeros((size, size), dtype=bool)
+        st.session_state.flagged = np.zeros((size, size), dtype=bool)
+    
+    board = st.session_state.board
+    revealed = st.session_state.revealed
+    flagged = st.session_state.flagged
+    
+    row = st.number_input("Row (0-indexed)", min_value=0, max_value=size-1, step=1)
+    col = st.number_input("Column (0-indexed)", min_value=0, max_value=size-1, step=1)
+    
+    if st.button("Reveal Cell"):
+        if board[row][col] == -1:
+            st.error("💥 Game Over! You hit a mine.")
+            st.session_state.revealed = np.ones((size, size), dtype=bool)
         else:
-            if st.button("🟦", key=f"{r}{c}"):
-                reveal_cell(r, c)
-    st.write(cols)
+            reveal(board, revealed, row, col)
+    
+    if st.button("Flag Cell"):
+        flagged[row][col] = not flagged[row][col]
+    
+    display_board(board, revealed, flagged)
+    
+    if np.all((board != -1) | revealed):
+        st.success("🎉 Congratulations! You won the game!")
+
+if __name__ == "__main__":
+    main()
