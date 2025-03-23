@@ -87,3 +87,9 @@ if game["winner"]:
 time.sleep(0.1)
 st.session_state.game = game
 st.rerun()
+
+
+
+
+
+
