@@ -1,25 +1,30 @@
-import discord
-import os
-from discord.ext import commands
+import streamlit as st
+import requests
 
-# Set up bot prefix
-bot = commands.Bot(command_prefix="!")
+# GitHub Personal Access Token (Securely Store It, Don't Share Publicly)
+TOKEN = "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"
 
-@bot.event
-async def on_ready():
-    print(f'Logged in as {bot.user}')
+def get_github_profile_image(username):
+    url = f"https://api.github.com/users/{username}"
+    headers = {"Authorization": f"token {TOKEN}"}
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        return data["avatar_url"]
+    else:
+        return None
 
-@bot.command()
-async def hello(ctx):
-    await ctx.send("Hello! I'm your Discord bot.")
+st.title("GitHub Profile Image Scraper")
 
-@bot.command()
-async def echo(ctx, *, message: str):
-    await ctx.send(message)
+username = st.text_input("Enter GitHub Username:")
 
-# Run bot with token from environment variable
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-if TOKEN:
-    bot.run(TOKEN)
-else:
-    print("Bot token not found. Set DISCORD_BOT_TOKEN as an environment variable.")
+if st.button("Get Profile Image"):
+    if username:
+        image_url = get_github_profile_image(username)
+        if image_url:
+            st.image(image_url, caption=f"GitHub Profile Image of {username}", use_column_width=True)
+        else:
+            st.error("User not found or API rate limit exceeded!")
+    else:
+        st.warning("Please enter a username!")
